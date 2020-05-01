@@ -1,4 +1,4 @@
-DATA_FOLDER = "pkmgen3";
+DATA_FOLDER = "clover";
 
 dofile (DATA_FOLDER .. "/Data.lua");
 dofile (DATA_FOLDER .. "/Memory.lua");
