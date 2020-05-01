@@ -1,228 +1,142 @@
-Program = {
-	selectedPokemon = {},
-	trainerPokemonTeam = {},
-	enemyPokemonTeam = {},
-	trainerInfo = {}
-}
-Program.rng = {
-	current = 0,
-	previous = 0,
-	grid = {}
-}
-Program.map = {
-	id = 0,
-	encounters = {
-		{
-			encrate = -1,
-			SLOTS = 12,
-			RATES = {20,20,10,10,10,10,5,5,4,4,1,1}
-		},
-		{
-			encrate = -1,
-			SLOTS = 5,
-			RATES = {60,30,5,4,1}
-		},
-		{
-			encrate = -1,
-			SLOTS = 5,
-			RATES = {60,30,5,4,1}
-		}
-	}
-}
-Program.catchdata = {
-	pokemon = 1,
-	curHP = 20,
-	maxHP = 20,
-	level = 5,
-	ball = 4,
-	status = 0,
-	rng = 0,
-	rate = 0
-}
+Program = {};
 
-function Program.main()
-	Input.update()
-	Program.trainerPokemonTeam = Program.getTrainerData(1)
-	Program.enemyPokemonTeam = Program.getTrainerData(2)
-	Program.trainerInfo = Program.getTrainerInfo()
-	if LayoutSettings.showRightPanel then
-		local pokemonaux = Program.getPokemonData(LayoutSettings.pokemonIndex)
-		if Program.validPokemonData(pokemonaux) then
-			Program.selectedPokemon = pokemonaux
-		end
-		Drawing.drawPokemonView()
-		Drawing.drawGeneralInfo()
-	end
-	if LayoutSettings.menus.main.selecteditem == LayoutSettings.menus.main.RNG then
-		if LayoutSettings.menus.rng.selecteditem == LayoutSettings.menus.rng.ENCOUNTER then
-			local mapid = Memory.readword(GameSettings.mapbank)
-			if (mapid ~= Program.map.id) then
-				Program.map.id = mapid
-				Program.updateEncounterData()
+gEnemyParty = 0x202402c;
+gTrainers = 0x823eac8;
+gTrainerBattleOpponent_A = 0x20386ae;
+Trainer_partySize = 0x20;
+Trainer_SIZE = 0x28;
+gBaseStats = 0x8254784;
+gBaseStats_SIZE = 0x1c;
+gBaseStats_abilities = 0x16;
+gBaseStats_type1 = 0x6;
+gBaseStats_type2 = 0x7;
+BATTLE_TYPE_TRAINER = 0x8;
+gBattleTypeFlags = 0x2022b4c;
+
+foundTrainers = {};
+
+function Program.concatEVsOrIVs(t, allowZero)
+	local output = "";
+	local firstValue = true;
+
+	for i, value in ipairs(t) do
+		if allowZero or value ~= 0 then
+			if not firstValue then
+				output = output .. "/";
 			end
-		elseif LayoutSettings.menus.rng.selecteditem == LayoutSettings.menus.rng.CATCH then
-			Program.updateCatchData()
-			Drawing.drawCatchRate()
-		end
-		RNG.update()
-		Drawing.drawRNGPanel()
-	elseif LayoutSettings.menus.main.selecteditem == LayoutSettings.menus.main.MAP then
-		Drawing.drawMap()
-	end
-	Drawing.drawButtons()
-	Drawing.drawLayout()
-end
-
-function Program.getTrainerInfo()
-	local trainer = Memory.readdword(GameSettings.trainerpointer)
-	if Memory.readbyte(trainer) == 0 then
-		return {
-			gender = -1,
-			tid = 0,
-			sid = 0
-		}
-	else
-		return {
-			gender = Memory.readbyte(trainer + 8),
-			tid = Memory.readword(trainer + 10),
-			sid = Memory.readword(trainer + 12)
-		}
-	end
-end
-
-function Program.updateCatchData()
-	if LayoutSettings.menus.catch.selecteditem == LayoutSettings.menus.catch.AUTO then
-		local pokemonaux = Program.getPokemonData({player = 2, slot = 1})
-		if Program.validPokemonData(pokemonaux) then
-			Program.catchdata.pokemon = pokemonaux.pokemonID
-			Program.catchdata.curHP = pokemonaux.curHP 
-			Program.catchdata.maxHP = pokemonaux.maxHP 
-			Program.catchdata.level = pokemonaux.level
-			Program.catchdata.status = pokemonaux.status
+			output = output .. value .. " " .. PokemonData.stats[i];
+			firstValue = false;
 		end
 	end
-	
-	local m = Program.catchdata.maxHP
-	local h = Program.catchdata.curHP
-	local c = PokemonData.catchrate[Program.catchdata.pokemon + 1]
-	
-	local s = 1
-	if Program.catchdata.status == 1 or Program.catchdata.status == 4 then
-		s = 2
-	elseif Program.catchdata.status > 1 then
-		s = 1.5
-	end
-	
-	local b = 1
-	if Program.catchdata.ball == 2 then
-	elseif Program.catchdata.ball == 2 then
-		b = 1.5
-	elseif Program.catchdata.ball == 3 then
-		b = 1.5
-	elseif Program.catchdata.ball == 5 then
-		b = 1.5
-	end
-	
-	local x = math.floor((3 * m - 2 * h) * math.floor(c * b))
-	x = math.floor(x / (3*m))
-	x = math.floor(x * s)
-	
-	local y = 65536
-	if (x < 255 and Program.catchdata.ball > 1) then		
-		y = math.floor(math.sqrt(16711680 / x))
-		y = math.floor(math.sqrt(y))
-		y = math.floor(1048560 / y)
-	end
-	Program.catchdata.rng = y
-	Program.catchdata.rate = (y/65536) * (y/65536) * (y/65536) * (y/65536)
+
+	return output;
 end
 
-function Program.updateEncounterData()
-	-- Search map in ROM's table
-	if Program.map.id == 0 then
-		Program.map.encounters[1].encrate = -1
-		Program.map.encounters[2].encrate = -1
-		Program.map.encounters[3].encrate = -1
-		return
-	end
-	local mapid_aux = Memory.readword(GameSettings.encountertable)
-	local index = 0
-	while mapid_aux ~= Program.map.id do
-		index = index + 1
-		mapid_aux = Memory.readword(GameSettings.encountertable + 20*index)
-		if mapid_aux == 0xFFFF then
-			Program.map.encounters[1].encrate = -1
-			Program.map.encounters[2].encrate = -1
-			Program.map.encounters[3].encrate = -1
-			return
-		end
-	end
-	
-	-- Search encounter data
-	for i=1,3,1 do
-		local minl = {}
-		local maxl = {}
-		local pkm = {}
-		local pointer = Memory.readdword(GameSettings.encountertable + 20*index + 4*i)
-		if pointer == 0 then
-			Program.map.encounters[i].encrate = -1
+function Program.makeTrainerData()
+	local trainerData = {}
+	local battleTypeFlags = Memory.readdword(gBattleTypeFlags);
+	local partySize;
+	local trainerBattleOpponent;
+
+	if bit.band(battleTypeFlags, BATTLE_TYPE_TRAINER) ~= 0 then
+		trainerBattleOpponent = Memory.readword(gTrainerBattleOpponent_A);
+		if foundTrainers[trainerBattleOpponent] == nil then
+			-- gTrainers[trainerNum].partySize
+			partySize = Memory.readbyte(gTrainers + Trainer_SIZE * trainerBattleOpponent + Trainer_partySize)
 		else
-			local ratio = Memory.readword(pointer)
-			if ratio == 0xFFFF then
-				Program.map.encounters[i].encrate = -1
-			else
-				Program.map.encounters[i].encrate = ratio
-				Program.map.encounters[i].pokemon = {}
-				pointer = Memory.readdword(pointer + 4)
-				for j = 1, Program.map.encounters[i].SLOTS,1 do
-					local pkmdata = Memory.readdword(pointer + (j-1)*4)
-					Program.map.encounters[i].pokemon[j] = {
-						minlevel = Utils.getbits(pkmdata, 0, 8),
-						maxlevel = Utils.getbits(pkmdata, 8, 8),
-						id = Utils.getbits(pkmdata, 16, 16)
-					}
-				end
-			end
+			return "";
 		end
-	end
-end
 
-function Program.getTrainerData(index)
-	local trainerdata = {}
-	local st = 0
-	if index == 1 then
-		st = GameSettings.pstats
+		table.insert(trainerData, string.format("Trainer 0x%x:\n", trainerBattleOpponent))
 	else
-		st = GameSettings.estats
+		table.insert(trainerData, "Wild encounter or totem\n");
+		partySize = 1;
 	end
-	for i = 1,6,1 do
-		local start = st + 100 * (i - 1)
-		local personality = Memory.readdword(start)
-		local magicword = bit.bxor(personality, Memory.readdword(start + 4))
-		local growthoffset = (TableData.growth[(personality % 24) + 1] - 1) * 12
-		local growth = bit.bxor(Memory.readdword(start + 32 + growthoffset), magicword)
-		trainerdata[i] = {
-			pkmID = Utils.getbits(growth, 0, 16),
-			curHP = Memory.readword(start + 86),
-			maxHP = Memory.readword(start + 88),
-			level = Memory.readbyte(start + 84)
-		}
+
+	for i = 1, partySize, 1 do
+		local monData = Program.getPokemonData(i)
+		local monString = PokemonData.name[monData.pokemonID + 1];
+
+		if monData.gender == 0 then
+			monString = monString .. " (M) @ "
+		else
+			monString = monString .. " (F) @ "
+		end
+		
+		if monData.heldItem ~= 0 then
+			monString = monString .. PokemonData.item[monData.heldItem + 1]
+		else
+			monString = monString .. "None"
+		end
+		
+		monString = monString .. "\nAbility: "
+		local abilityID;
+
+		if monData.hiddenAbility == 0 then
+			local abilityAddr = gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_abilities + monData.ability
+			abilityID = Memory.readbyte(abilityAddr)
+		else
+			abilityID = monData.hiddenAbility
+		end
+		
+		monString = monString .. PokemonData.ability[abilityID + 1];
+		monString = monString .. "\nLevel: " .. monData.level;
+		local evOutput = Program.concatEVsOrIVs(monData.EVs, false);
+		if evOutput ~= "" then
+			monString = monString .. "\nEVs: " .. evOutput;
+		end
+		monString = monString .. "\nIVs: " .. Program.concatEVsOrIVs(monData.IVs, true);
+		monString = monString .. "\nStats: ";
+		
+		local firstStat = true;
+
+		for j, stat in ipairs(monData.stats) do
+			if not firstStat then
+				monString = monString .. "/";
+			end
+			monString = monString .. stat;
+			firstStat = false;
+		end
+
+		local type1 = Memory.readbyte(gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_type1)
+		local type2 = Memory.readbyte(gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_type2)
+		monString = monString .. "\nType: "
+
+		if type1 == type2 then
+			monString = monString .. PokemonData.type[type1 + 1];
+		else
+			monString = monString .. PokemonData.type[type1 + 1] .. "/" .. PokemonData.type[type2 + 1];
+		end
+
+		monString = monString .. "\n" .. PokemonData.nature[monData.nature + 1] .. " Nature";
+
+		for j, move in ipairs(monData.moves) do
+			if move == 0 then
+				break;
+			end
+			monString = monString .. "\n- " .. PokemonData.move[move + 1];
+		end
+		
+		monString = monString .. "\n\n";
+		table.insert(trainerData, monString);
 	end
-	return trainerdata
+
+	table.insert(trainerData, "===================================\n\n");
+
+	if trainerBattleOpponent ~= nil then
+		foundTrainers[trainerBattleOpponent] = true;
+	end
+
+	return table.concat(trainerData, "");
 end
 
 function Program.getPokemonData(index)
-	local start
-	if index.player == 1 then
-		start = GameSettings.pstats + 100 * (index.slot - 1)
-	else
-		start = GameSettings.estats + 100 * (index.slot - 1)
-	end
+	local start = gEnemyParty + (index - 1) * 0x64;
 	
 	local personality = Memory.readdword(start)
 	local otid = Memory.readdword(start + 4)
 	local magicword = bit.bxor(personality, otid)
-	
+
 	local aux = personality % 24
 	local growthoffset = (TableData.growth[aux+1] - 1) * 12
 	local attackoffset = (TableData.attack[aux+1] - 1) * 12
@@ -267,23 +181,39 @@ function Program.getPokemonData(index)
 	elseif status_aux == 128 then
 		status_result = 6	
 	end
-	
-	return {
+
+	monData = {
 		pokemonID = Utils.getbits(growth1, 0, 16),
 		heldItem = Utils.getbits(growth1, 16, 16),
-		pokerus = Utils.getbits(misc1, 0, 8),
-		tid = Utils.getbits(otid, 0, 16),
-		sid = Utils.getbits(otid, 16, 16),
-		iv = misc2,
-		ev1 = effort1,
-		ev2 = effort2,
-		level = Memory.readbyte(start + 84),
-		nature = personality % 25,
-		pp = attack3,
+		friendship = Utils.getbits(growth3, 8, 8),
+		hiddenAbility = Utils.getbits(growth3, 16, 8);
+
 		move1 = Utils.getbits(attack1, 0, 16),
 		move2 = Utils.getbits(attack1, 16, 16),
 		move3 = Utils.getbits(attack2, 0, 16),
 		move4 = Utils.getbits(attack2, 16, 16),
+		pp = attack3,
+
+		hpEV = Utils.getbits(effort1, 0, 8);
+		atkEV = Utils.getbits(effort1, 8, 8);
+		defEV = Utils.getbits(effort1, 16, 8);
+		speedEV = Utils.getbits(effort1, 24, 8);
+		spatkEV = Utils.getbits(effort2, 0, 8);
+		spdefEV = Utils.getbits(effort2, 8, 8);
+
+		pokerus = Utils.getbits(misc1, 0, 8),
+		gender = Utils.getbits(misc1, 31, 1),
+		
+		hpIV = Utils.getbits(misc2, 0, 5),
+		atkIV = Utils.getbits(misc2, 5, 5),
+		defIV = Utils.getbits(misc2, 10, 5),
+		speedIV = Utils.getbits(misc2, 15, 5),
+		spatkIV = Utils.getbits(misc2, 20, 5),
+		spdefIV = Utils.getbits(misc2, 25, 5),
+		ability = Utils.getbits(misc2, 31, 1),
+
+		level = Memory.readbyte(start + 84),
+		nature = personality % 25,
 		curHP = Memory.readword(start + 86),
 		maxHP = Memory.readword(start + 88),
 		atk = Memory.readword(start + 90),
@@ -291,19 +221,18 @@ function Program.getPokemonData(index)
 		spe = Memory.readword(start + 94),
 		spa = Memory.readword(start + 96),
 		spd = Memory.readword(start + 98),
+
+		tid = Utils.getbits(otid, 0, 16),
+		sid = Utils.getbits(otid, 16, 16),
+
 		status = status_result,
 		sleep_turns = sleep_turns_result
-	}
-end
+	};
 
-function Program.validPokemonData(pokemonData)
-	if pokemonData["pokemonID"] < 0 or pokemonData["pokemonID"] > 412 or pokemonData["heldItem"] < 0 or pokemonData["heldItem"] > 376 then
-		return false
-	elseif pokemonData["move1"] < 0 or pokemonData["move2"] < 0 or pokemonData["move3"] < 0 or pokemonData["move4"] < 0 then		
-		return false
-	elseif pokemonData["move1"] > 354 or pokemonData["move2"] > 354 or pokemonData["move3"] > 354 or pokemonData["move4"] > 354 then
-		return false
-	else
-		return true
-	end
+	monData.EVs = {monData.hpEV, monData.atkEV, monData.defEV, monData.spatkEV, monData.spdefEV, monData.speedEV};
+	monData.IVs = {monData.hpIV, monData.atkIV, monData.defIV, monData.spatkIV, monData.spdefIV, monData.speedIV};
+	monData.stats = {monData.maxHP, monData.atk, monData.def, monData.spa, monData.spd, monData.spe};
+	monData.moves = {monData.move1, monData.move2, monData.move3, monData.move4};
+
+	return monData;
 end
