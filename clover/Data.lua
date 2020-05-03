@@ -259,7 +259,7 @@ PokemonData = {
 		"Prism Armor", "Ball Fetch", "Concert", "Wait For It", "Gradient", "Any Ability", "Steam Engine"
 	},
 	item = {
-		"????????", "Master Ball", "Ultra Ball", "Great Ball", "Poké Ball", "Safari Ball", "Net Ball",
+		"????????", "Master Ball", "Ultra Ball", "Great Ball", "PokÃ© Ball", "Safari Ball", "Net Ball",
 		"Dive Ball", "Nest Ball", "Repeat Ball", "Timer Ball", "Luxury Ball", "Premier Ball", "Potion",
 		"Antidote", "Burn Heal", "Ice Heal", "Awakening", "Paralyz Heal", "Full Restore", "Max Potion",
 		"Hyper Potion", "Super Potion", "Full Heal", "Revive", "Max Revive", "Fresh Water", "Soda Pop",
@@ -270,7 +270,7 @@ PokemonData = {
 		"Masta Ball", "Monster Ball", "Fast Ball", "Barbed Ball", "Rasta Ball", "B-Ball", "Rude Ball",
 		"HP Up", "Protein", "Iron", "Carbos", "Calcium", "Rare Candy", "PP Up", "Zinc", "PP Max",
 		"Magnet Ball", "Guard Spec.", "Dire Hit", "X Attack", "X Defend", "X Speed", "X Accuracy",
-		"X Special", "Poké Doll", "Dream Ball", "Cellar Key", "Super Repel", "Max Repel", "Escape Rope",
+		"X Special", "PokÃ© Doll", "Dream Ball", "Cellar Key", "Super Repel", "Max Repel", "Escape Rope",
 		"Repel", "DDT Spray", "Rare Bone", "Grip Claw", "Destiny Knot", "Bottlecap", "Golden Cap",
 		"Sun Stone", "Moon Stone", "Fire Stone", "Thunderstone", "Water Stone", "Leaf Stone", "Far Doll",
 		"Tor Doll", "Metal Coat", "Up-Grade", "Tinymushroom", "Big Mushroom", "Binding Band", "Pearl",

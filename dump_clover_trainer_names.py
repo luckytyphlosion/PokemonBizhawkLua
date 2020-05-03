@@ -41,7 +41,7 @@ def main():
 
     output = ""
 
-    with open("trainer_sets.txt", "r") as f:
+    with open("all_trainer_sets.txt", "r") as f:
         for line in f:
             match_obj = trainer_regex.search(line)
             if match_obj is None:
@@ -50,7 +50,7 @@ def main():
                 trainer_num = int(match_obj.group(1), 16)
                 output += f"{trainer_combined_names[trainer_num]} (id: 0x{match_obj.group(1)})\n"
 
-    with open("trainer_sets_out.txt", "w+") as f:
+    with open("all_trainer_sets_out.txt", "w+") as f:
         f.write(output)
 
 if __name__ == "__main__":
