@@ -11,7 +11,7 @@ function onIsInBattle()
 		print(output);
 		client.pause();
 	elseif output ~= "" then
-		local logFile = io.open("trainer_sets.txt", "a");
+		local logFile = io.open("trainer_sets_routing.txt", "a");
 		logFile:write(output);
 		logFile:close();
 		print("Wrote trainer or encounter data!");

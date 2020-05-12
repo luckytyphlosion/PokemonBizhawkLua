@@ -54,7 +54,7 @@ function Program.makeTrainerData()
 	end
 
 	for i = 1, partySize, 1 do
-		local monData = Program.getPokemonData(i)
+		local monData = Program.getPokemonData(i, gEnemyParty);
 		local monString = PokemonData.name[monData.pokemonID + 1];
 
 		if monData.gender == 0 then
@@ -130,8 +130,8 @@ function Program.makeTrainerData()
 	return table.concat(trainerData, "");
 end
 
-function Program.getPokemonData(index)
-	local start = gEnemyParty + (index - 1) * 0x64;
+function Program.getPokemonData(index, partySrc)
+	local start = partySrc + (index - 1) * 0x64;
 	
 	local personality = Memory.readdword(start)
 	local otid = Memory.readdword(start + 4)
@@ -226,7 +226,8 @@ function Program.getPokemonData(index)
 		sid = Utils.getbits(otid, 16, 16),
 
 		status = status_result,
-		sleep_turns = sleep_turns_result
+		sleep_turns = sleep_turns_result,
+		personality = personality
 	};
 
 	monData.EVs = {monData.hpEV, monData.atkEV, monData.defEV, monData.spatkEV, monData.spdefEV, monData.speedEV};
