@@ -1,4 +1,6 @@
 
+Random = {};
+
 s0 = 0;
 s1 = 0;
 s2 = 0;
@@ -34,11 +36,11 @@ function Random.seed(seed)
 	s1 = splitMix32(s0);
 	s2 = splitMix32(s1);
 	s3 = splitMix32(s2);
-	print(string.format("s0: 0x%08x\ns1: 0x%08x\ns2: 0x%08x\ns3: 0x%08x\n", s0, s1, s2, s3));
+	-- print(string.format("s0: 0x%08x\ns1: 0x%08x\ns2: 0x%08x\ns3: 0x%08x\n", s0, s1, s2, s3));
 end
 
 function Random.nextInt()
-	result = bit.rol(s0 + s3, 7) + s0;
+	local result = bit.band(bit.rol(bit.band(s0 + s3, 0xffffffff), 7) + s0, 0xffffffff);
 
 	t = bit.lshift(s1, 9);
 
@@ -66,5 +68,4 @@ function testRandom()
 	end
 end
 
-testRandom();
-
+Random.seed(os.time());

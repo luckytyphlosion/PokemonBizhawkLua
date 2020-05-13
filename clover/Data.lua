@@ -18,6 +18,13 @@
 --		misc
 -- PickupData
 
+HP_INTERNAL = 1;
+ATK_INTERNAL = 2;
+DEF_INTERNAL = 3;
+SPE_INTERNAL = 4;
+SPA_INTERNAL = 5;
+SPD_INTERNAL = 6;
+
 PokemonData = {
 	name = {
 		"??????????", "Grasshole", "Analgae", "Rectreem", "Arabomb", "Iguallah", "Lizakbar", "Ejacasm", 
@@ -198,6 +205,7 @@ PokemonData = {
 		"Modest", "Mild", "Quiet", "Bashful", "Rash",
 		"Calm", "Gentle", "Sassy", "Careful", "Quirky"
 	},
+	natureLookup = {},
 	type = {
 		"Normal","Fighting","Flying","Poison","Ground",
 		"Rock","Bug","Ghost","Steel","???",
@@ -301,6 +309,41 @@ PokemonData = {
 	},
 	stats = {
 		"HP", "Atk", "Def", "SpA", "SpD", "Spe"
+	},
+	statsInternal = {
+		"HP", "Atk", "Def", "Spe", "SpA", "SpD"
+	},
+	statsInternalLookup = {},
+	natureModifier = {
+		{ATK_INTERNAL, ATK_INTERNAL},
+		{ATK_INTERNAL, DEF_INTERNAL},
+		{ATK_INTERNAL, SPE_INTERNAL},
+		{ATK_INTERNAL, SPA_INTERNAL},
+		{ATK_INTERNAL, SPD_INTERNAL},
+
+		{DEF_INTERNAL, ATK_INTERNAL},
+		{DEF_INTERNAL, DEF_INTERNAL},
+		{DEF_INTERNAL, SPE_INTERNAL},
+		{DEF_INTERNAL, SPA_INTERNAL},
+		{DEF_INTERNAL, SPD_INTERNAL},
+
+		{SPE_INTERNAL, ATK_INTERNAL},
+		{SPE_INTERNAL, DEF_INTERNAL},
+		{SPE_INTERNAL, SPE_INTERNAL},
+		{SPE_INTERNAL, SPA_INTERNAL},
+		{SPE_INTERNAL, SPD_INTERNAL},
+
+		{SPA_INTERNAL, ATK_INTERNAL},
+		{SPA_INTERNAL, DEF_INTERNAL},
+		{SPA_INTERNAL, SPE_INTERNAL},
+		{SPA_INTERNAL, SPA_INTERNAL},
+		{SPA_INTERNAL, SPD_INTERNAL},
+
+		{SPD_INTERNAL, ATK_INTERNAL},
+		{SPD_INTERNAL, DEF_INTERNAL},
+		{SPD_INTERNAL, SPE_INTERNAL},
+		{SPD_INTERNAL, SPA_INTERNAL},
+		{SPD_INTERNAL, SPD_INTERNAL}
 	}
 }
 
@@ -310,3 +353,11 @@ TableData = {
 	effort = {3,4,2,2,4,3, 3,4,2,2,4,3, 1,1,1,1,1,1, 4,3,4,3,2,2},
 	misc   = {4,3,4,3,2,2, 4,3,4,3,2,2, 4,3,4,3,2,2, 1,1,1,1,1,1}
 }
+
+for k, v in pairs(PokemonData.nature) do
+	PokemonData.natureLookup[v:lower()] = k - 1;
+end
+
+for k, v in pairs(PokemonData.statsInternal) do
+	PokemonData.statsInternalLookup[v:lower()] = k - 1;
+end

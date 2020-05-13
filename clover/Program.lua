@@ -6,6 +6,7 @@ gTrainerBattleOpponent_A = 0x20386ae;
 Trainer_partySize = 0x20;
 Trainer_SIZE = 0x28;
 gBaseStats = 0x8254784;
+gBaseStats_stats = 0x8254784;
 gBaseStats_SIZE = 0x1c;
 gBaseStats_abilities = 0x16;
 gBaseStats_type1 = 0x6;
@@ -14,6 +15,15 @@ BATTLE_TYPE_TRAINER = 0x8;
 gBattleTypeFlags = 0x2022b4c;
 
 foundTrainers = {};
+
+MON_DATA_IV_BASE = 39;
+MON_DATA_HP_IV = 39;
+MON_DATA_ATK_IV = 40;
+MON_DATA_DEF_IV = 41;
+MON_DATA_SPEED_IV = 42;
+MON_DATA_SPATK_IV = 43;
+MON_DATA_SPDEF_IV = 44;
+MON_DATA_NATURE = 91;
 
 function Program.concatEVsOrIVs(t, allowZero)
 	local output = "";
@@ -131,6 +141,10 @@ function Program.makeTrainerData()
 end
 
 function Program.getPokemonData(index, partySrc)
+	if index > 6 then
+		return nil
+	end
+
 	local start = partySrc + (index - 1) * 0x64;
 	
 	local personality = Memory.readdword(start)
@@ -236,4 +250,158 @@ function Program.getPokemonData(index, partySrc)
 	monData.moves = {monData.move1, monData.move2, monData.move3, monData.move4};
 
 	return monData;
+end
+
+function Program.setPokemonData(index, partySrc, field, newValue)
+	if index > 6 then
+		return nil
+	end
+
+	local start = partySrc + (index - 1) * 0x64;
+
+	local personality = Memory.readdword(start)
+	local otid = Memory.readdword(start + 4)
+	local magicword = bit.bxor(personality, otid)
+
+	local aux = personality % 24
+	local growthoffset = (TableData.growth[aux+1] - 1) * 12
+	local attackoffset = (TableData.attack[aux+1] - 1) * 12
+	local effortoffset = (TableData.effort[aux+1] - 1) * 12
+	local miscoffset   = (TableData.misc[aux+1]   - 1) * 12
+
+	local growth1 = bit.bxor(Memory.readdword(start+32+growthoffset),   magicword)
+	local growth2 = bit.bxor(Memory.readdword(start+32+growthoffset+4), magicword)
+	local growth3 = bit.bxor(Memory.readdword(start+32+growthoffset+8), magicword)
+	local attack1 = bit.bxor(Memory.readdword(start+32+attackoffset),   magicword)
+	local attack2 = bit.bxor(Memory.readdword(start+32+attackoffset+4), magicword)
+	local attack3 = bit.bxor(Memory.readdword(start+32+attackoffset+8), magicword)
+	local effort1 = bit.bxor(Memory.readdword(start+32+effortoffset),   magicword)
+	local effort2 = bit.bxor(Memory.readdword(start+32+effortoffset+4), magicword)
+	local effort3 = bit.bxor(Memory.readdword(start+32+effortoffset+8), magicword)
+	local misc1   = bit.bxor(Memory.readdword(start+32+miscoffset),     magicword)
+	local misc2   = bit.bxor(Memory.readdword(start+32+miscoffset+4),   magicword)
+	local misc3   = bit.bxor(Memory.readdword(start+32+miscoffset+8),   magicword)
+
+	local recalculateStats = false;
+
+	if field == MON_DATA_HP_IV then
+		misc2 = Utils.setbits(misc2, newValue, 0, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_ATK_IV then
+		misc2 = Utils.setbits(misc2, newValue, 5, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_DEF_IV then
+		misc2 = Utils.setbits(misc2, newValue, 10, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_SPEED_IV then
+		misc2 = Utils.setbits(misc2, newValue, 15, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_SPATK_IV then
+		misc2 = Utils.setbits(misc2, newValue, 20, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_SPDEF_IV then
+		misc2 = Utils.setbits(misc2, newValue, 25, 5);
+		recalculateStats = true;
+	elseif field == MON_DATA_NATURE then
+		local randomValue = Random.nextInt();
+		local offset = (newValue - randomValue) % 25;
+		personality = offset + randomValue;
+		if personality > 0xffffffff then
+			offset = (randomValue - newValue) % 25;
+			personality = randomValue - offset;
+		end
+
+		memory.write_u32_le(start, personality);
+		aux = personality % 24;
+		print("aux: " .. aux);
+		growthoffset = (TableData.growth[aux+1] - 1) * 12
+		attackoffset = (TableData.attack[aux+1] - 1) * 12
+		effortoffset = (TableData.effort[aux+1] - 1) * 12
+		miscoffset   = (TableData.misc[aux+1]   - 1) * 12
+		recalculateStats = true;
+	else
+		print("Warning: unknown field " .. field .. "!");
+	end
+
+	if recalculateStats then
+		local stats = {};
+		local baseStats = {};
+		local hpIV = Utils.getbits(misc2, 0, 5);
+		local atkIV = Utils.getbits(misc2, 5, 5);
+		local defIV = Utils.getbits(misc2, 10, 5);
+		local speedIV = Utils.getbits(misc2, 15, 5);
+		local spatkIV = Utils.getbits(misc2, 20, 5);
+		local spdefIV = Utils.getbits(misc2, 25, 5);
+		
+		local hpEV = Utils.getbits(effort1, 0, 8);
+		local atkEV = Utils.getbits(effort1, 8, 8);
+		local defEV = Utils.getbits(effort1, 16, 8);
+		local speedEV = Utils.getbits(effort1, 24, 8);
+		local spatkEV = Utils.getbits(effort2, 0, 8);
+		local spdefEV = Utils.getbits(effort2, 8, 8);
+
+		local EVs = {hpEV, atkEV, defEV, speedEV, spatkEV, spdefEV};
+		local IVs = {hpIV, atkIV, defIV, speedIV, spatkIV, spdefIV};
+
+		local level = Memory.readbyte(start + 84);
+
+		local curHP = Memory.readword(start + 86);
+		local oldMaxHP = Memory.readword(start + 88);
+		
+		local nature = personality % 25 + 1;
+
+		local pokemonID = Utils.getbits(growth1, 0, 16);
+
+		for i = 1, 6, 1 do
+			baseStats[i] = Memory.readbyte(gBaseStats_stats + pokemonID * gBaseStats_SIZE + (i - 1));
+			-- print(PokemonData.statsInternal[i] .. ": " .. baseStats[i]);
+		end
+
+		stats[1] = math.floor(((2 * baseStats[1] + hpIV + math.floor(hpEV / 4)) * level) / 100) + level + 10;
+		
+		for i = 2, 6, 1 do
+			stats[i] = math.floor(((2 * baseStats[i] + IVs[i] + math.floor(EVs[i] / 4)) * level) / 100) + 5;
+		end
+
+		local natureModifier = PokemonData.natureModifier[nature];
+		local natureModifier1 = natureModifier[1];
+		local natureModifier2 = natureModifier[2];
+
+		if natureModifier1 ~= natureModifier2 then
+			stats[natureModifier1] = math.floor((stats[natureModifier1] * 11) / 10);
+			stats[natureModifier2] = math.floor((stats[natureModifier2] * 9) / 10);
+		end
+
+		for i = 1, 6, 1 do
+			memory.write_u16_le(start + 88 + (i - 1) * 2, stats[i]);
+		end
+
+		if curHP ~= 0 then
+			curHP = curHP + stats[1] - oldMaxHP;
+		end
+
+		memory.write_u16_le(start + 86, curHP);
+	end
+
+	local cs = Utils.addhalves(growth1) + Utils.addhalves(growth2) + Utils.addhalves(growth3)
+	         + Utils.addhalves(attack1) + Utils.addhalves(attack2) + Utils.addhalves(attack3)
+			 + Utils.addhalves(effort1) + Utils.addhalves(effort2) + Utils.addhalves(effort3)
+			 + Utils.addhalves(misc1)   + Utils.addhalves(misc2)   + Utils.addhalves(misc3)
+	cs = cs % 65536;
+	memory.write_u16_le(start+0x1c, cs);
+
+	magicword = bit.bxor(personality, otid);
+
+	memory.write_u32_le(start+32+growthoffset,   bit.bxor(growth1, magicword));
+	memory.write_u32_le(start+32+growthoffset+4, bit.bxor(growth2, magicword));
+	memory.write_u32_le(start+32+growthoffset+8, bit.bxor(growth3, magicword));
+	memory.write_u32_le(start+32+attackoffset,   bit.bxor(attack1, magicword));
+	memory.write_u32_le(start+32+attackoffset+4, bit.bxor(attack2, magicword));
+	memory.write_u32_le(start+32+attackoffset+8, bit.bxor(attack3, magicword));
+	memory.write_u32_le(start+32+effortoffset,   bit.bxor(effort1, magicword));
+	memory.write_u32_le(start+32+effortoffset+4, bit.bxor(effort2, magicword));
+	memory.write_u32_le(start+32+effortoffset+8, bit.bxor(effort3, magicword));
+	memory.write_u32_le(start+32+miscoffset,     bit.bxor(misc1, magicword));
+	memory.write_u32_le(start+32+miscoffset+4,   bit.bxor(misc2, magicword));
+	memory.write_u32_le(start+32+miscoffset+8,   bit.bxor(misc3, magicword));
 end

@@ -9,7 +9,22 @@ function Utils.ifelse(condition, ifcase, elsecase)
 end
 
 function Utils.getbits(a, b, d)
-	return bit.rshift(a, b) % bit.lshift(1 ,d)
+	return bit.rshift(a, b) % bit.lshift(1, d)
+end
+
+function Utils.setbits(source, bitsToSet, bitOffset, numBits)
+	local mask = bit.lshift(1, numBits) - 1;
+	local shiftedMask = bit.lshift(mask, bitOffset);
+	source = bit.band(source, bit.bnot(shiftedMask));
+	local shiftedBitsToSet = bit.lshift(bitsToSet, bitOffset);
+	return bit.bor(source, shiftedBitsToSet);
+end
+
+function testSetBits()
+	local result = Utils.setbits(30, 12, 2, 4);
+	print(string.format("0x%02x", result));
+	result = Utils.setbits(0xffff, 69, 5, 7);
+	print(string.format("0x%02x", result));
 end
 
 function Utils.gettop(a)
@@ -120,3 +135,9 @@ function Utils.getTableValueIndex(myvalue, mytable)
 	end
 	return 1
 end
+
+function testMod()
+	print((7 - 0xffb2f1b1) % 25);
+end
+
+-- testSetBits();
