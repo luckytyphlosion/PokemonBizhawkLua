@@ -32,19 +32,31 @@ function onChangeIVNature()
 	local input = forms.gettext(texthandle);
 
 	local splitInput = input:split(" ");
+	local slot = tonumber(splitInput[2]);
 	if bizstring.startswith(splitInput[1], "nature") then
-		local slot = tonumber(splitInput[2]);
 		local natureStr = splitInput[3]:lower();
 		local nature = PokemonData.natureLookup[natureStr];
 		Program.setPokemonData(slot, gPlayerParty, MON_DATA_NATURE, nature);
 		print(string.format("Set nature of slot %d to %s!", slot, natureStr:gsub("^%l", string.upper)));
 	elseif bizstring.startswith(splitInput[1], "iv") then
-		local slot = tonumber(splitInput[2]);
 		local statStr = splitInput[3]:lower();
 		local monDataOffset = MON_DATA_IV_BASE + PokemonData.statsInternalLookup[statStr];
 		local ivValue = tonumber(splitInput[4]);
 		Program.setPokemonData(slot, gPlayerParty, monDataOffset, ivValue);
 		print(string.format("Set %s IV of slot %d to %d!", statStr:gsub("^%l", string.upper), slot, ivValue));
+	elseif bizstring.startswith(splitInput[1], "move") then
+		local moveStr = splitInput[3]:lower();
+		local move = PokemonData.moveLookup[moveStr];
+		local moveSlot = tonumber(splitInput[4]) - 1;
+		local monDataOffset = MON_DATA_MOVE1 + moveSlot;
+		Program.setPokemonData(slot, gPlayerParty, monDataOffset, move);
+		print("set move todo!");
+	elseif bizstring.startswith(splitInput[1], "item") then
+		local itemStr = splitInput[3]:lower();
+		local item = PokemonData.itemLookup[itemStr];
+		local monDataOffset = MON_DATA_HELD_ITEM;
+		Program.setPokemonData(slot, gPlayerParty, monDataOffset, item);
+		print(string.format("Set item of slot %d to %s!", slot, itemStr));
 	else
 		print("Unknown command \"" .. splitInput[1] .. "\"!");
 	end

@@ -198,6 +198,7 @@ PokemonData = {
 		"Spooperpower", "Great Rage", "Wow Wiener", "Plunder", "Blobby Bop", "Ban Hammer", "Homerun Bat",
 		"Sudoku", "Elbow Drop"
 	},
+	moveLookup = {},
 	nature = {
 		"Hardy", "Lonely", "Brave", "Adamant", "Naughty",
 		"Bold", "Docile", "Relaxed", "Impish", "Lax",
@@ -307,6 +308,7 @@ PokemonData = {
 		"Bicycle", "Town Map", "VS Seeker", "Fame Checker", "TM Case", "Berry Pouch", "Dragon Gem",
 		"Battle Pass", "Ebin Pass", "Manifesto", "Dark Gem", "Fairy Gem", "Powder Jar", "Big Root", "Jar of Pee"
 	},
+	itemLookup = {},
 	stats = {
 		"HP", "Atk", "Def", "SpA", "SpD", "Spe"
 	},
@@ -360,4 +362,12 @@ end
 
 for k, v in pairs(PokemonData.statsInternal) do
 	PokemonData.statsInternalLookup[v:lower()] = k - 1;
+end
+
+for k, v in pairs(PokemonData.move) do
+	PokemonData.moveLookup[v:lower():gsub("%s+", "")] = k - 1;
+end
+
+for k, v in pairs(PokemonData.item) do
+	PokemonData.itemLookup[v:lower():gsub("%s+", "")] = k - 1;
 end

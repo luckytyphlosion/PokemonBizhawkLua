@@ -16,6 +16,12 @@ gBattleTypeFlags = 0x2022b4c;
 
 foundTrainers = {};
 
+MON_DATA_HELD_ITEM = 12;
+MON_DATA_MOVE1 = 13;
+MON_DATA_MOVE2 = 14;
+MON_DATA_MOVE3 = 15;
+MON_DATA_MOVE4 = 16;
+
 MON_DATA_IV_BASE = 39;
 MON_DATA_HP_IV = 39;
 MON_DATA_ATK_IV = 40;
@@ -319,6 +325,16 @@ function Program.setPokemonData(index, partySrc, field, newValue)
 		effortoffset = (TableData.effort[aux+1] - 1) * 12
 		miscoffset   = (TableData.misc[aux+1]   - 1) * 12
 		recalculateStats = true;
+	elseif field == MON_DATA_MOVE1 then
+		attack1 = Utils.setbits(attack1, newValue, 0, 16);
+	elseif field == MON_DATA_MOVE2 then
+		attack1 = Utils.setbits(attack1, newValue, 16, 16);
+	elseif field == MON_DATA_MOVE3 then
+		attack2 = Utils.setbits(attack2, newValue, 0, 16);
+	elseif field == MON_DATA_MOVE4 then
+		attack2 = Utils.setbits(attack2, newValue, 16, 16);
+	elseif field == MON_DATA_HELD_ITEM  then
+		growth1 = Utils.setbits(growth1, newValue, 16, 16);
 	else
 		print("Warning: unknown field " .. field .. "!");
 	end
