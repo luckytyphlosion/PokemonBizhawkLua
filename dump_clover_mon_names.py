@@ -19,18 +19,18 @@ def charmap_convert_bytes_to_string(input_bytes):
     return output
 
 def main():
-    with open("Cloverv12.gba", "rb") as f:
-        gSpeciesNames = 0x245ee0
+    with open("radical_red_2.1.gba", "rb") as f:
+        gSpeciesNames = 0x1618124
         f.seek(gSpeciesNames)
         output = ""
-        for i in range(412):
+        for i in range(1264):
             species_name_as_bytes = f.read(11)
             cur_species_name = charmap_convert_bytes_to_string(species_name_as_bytes)
             output += f"\"{cur_species_name}\", "
             if i != 0 and i % 7 == 0:
                 output += "\n"
 
-    with open("dump_clover_mon_names_out.txt", "w+") as f:
+    with open("dump_radical_red_mon_names_out.txt", "w+") as f:
         f.write(output)
 
 if __name__ == "__main__":

@@ -9,10 +9,10 @@ function Memory.read(addr, size)
 		mem = "EWRAM"
 	elseif memdomain == 3 then
 		mem = "IWRAM"
-	elseif memdomain == 8 then
+	elseif memdomain == 8 or memdomain == 9 then
 		mem = "ROM"
 	end
-	addr = bit.band(addr, 0xFFFFFF)
+	addr = bit.band(addr, 0x1FFFFFF)
 	if size == 1 then
 		return memory.read_u8(addr,mem)
 	elseif size == 2 then

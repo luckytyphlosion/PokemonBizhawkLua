@@ -1,16 +1,18 @@
 Program = {};
 
 gEnemyParty = 0x202402c;
+Pokemon_SIZE = 0x64;
 gTrainers = 0x823eac8;
 gTrainerBattleOpponent_A = 0x20386ae;
 Trainer_partySize = 0x20;
 Trainer_SIZE = 0x28;
-gBaseStats = 0x8254784;
-gBaseStats_stats = 0x8254784;
+gBaseStats = 0x996a984;
+gBaseStats_stats = 0x0;
 gBaseStats_SIZE = 0x1c;
 gBaseStats_abilities = 0x16;
 gBaseStats_type1 = 0x6;
 gBaseStats_type2 = 0x7;
+gBaseStats_hiddenAbility = 0x1a;
 BATTLE_TYPE_TRAINER = 0x8;
 gBattleTypeFlags = 0x2022b4c;
 
@@ -57,7 +59,6 @@ function Program.makeTrainerData()
 	if bit.band(battleTypeFlags, BATTLE_TYPE_TRAINER) ~= 0 then
 		trainerBattleOpponent = Memory.readword(gTrainerBattleOpponent_A);
 		if foundTrainers[trainerBattleOpponent] == nil then
-			-- gTrainers[trainerNum].partySize
 			partySize = Memory.readbyte(gTrainers + Trainer_SIZE * trainerBattleOpponent + Trainer_partySize)
 		else
 			return "";
@@ -71,6 +72,10 @@ function Program.makeTrainerData()
 
 	for i = 1, partySize, 1 do
 		local monData = Program.getPokemonData(i, gEnemyParty);
+		if trainerBattleOpponent == 0x29 then
+			print(string.format("partySize: %d, monData.pokemonID: %d", partySize, monData.pokemonID));
+		end
+
 		local monString = PokemonData.name[monData.pokemonID + 1];
 
 		if monData.gender == 0 then
@@ -86,16 +91,57 @@ function Program.makeTrainerData()
 		end
 		
 		monString = monString .. "\nAbility: "
-		local abilityID;
 
-		if monData.hiddenAbility == 0 then
-			local abilityAddr = gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_abilities + monData.ability
-			abilityID = Memory.readbyte(abilityAddr)
+		local abilityID;
+		local baseStatsAddr = gBaseStats + gBaseStats_SIZE * monData.pokemonID;
+
+		local monAbilityType = monsWithRandomAbilities[i];
+
+		if monAbilityType == 0 then
+			if monData.isHiddenAbility == 0 then
+				abilityID = Memory.readbyte(baseStatsAddr + gBaseStats_abilities + monData.ability);
+				if abilityID == 0 then
+					abilityID = Memory.readbyte(baseStatsAddr + gBaseStats_abilities)
+				end
+			else
+				abilityID = Memory.readbyte(baseStatsAddr + gBaseStats_hiddenAbility);
+			end
+	
+			monString = monString .. PokemonData.ability[abilityID + 1];
+		-- random standard ability
+		elseif monAbilityType == 1 then
+			--print(string.format("monAbilityType = 1, trainerBattleOpponent = 0x%x", trainerBattleOpponent));
+			ability1 = Memory.readbyte(baseStatsAddr + gBaseStats_abilities + 0);
+			ability2 = Memory.readbyte(baseStatsAddr + gBaseStats_abilities + 1);
+
+			if ability2 == 0 or ability1 == ability2 then
+				monString = monString .. PokemonData.ability[ability1 + 1];
+			else
+				monString = monString .. PokemonData.ability[ability1 + 1] .. " or " .. PokemonData.ability[ability2 + 1];
+			end
+		elseif monAbilityType == 2 then
+			--print(string.format("monAbilityType = 2, trainerBattleOpponent = 0x%x", trainerBattleOpponent));
+			ability1 = Memory.readbyte(baseStatsAddr + gBaseStats_abilities + 0);
+			ability2 = Memory.readbyte(baseStatsAddr + gBaseStats_abilities + 1);
+			hiddenAbility = Memory.readbyte(baseStatsAddr + gBaseStats_hiddenAbility);
+
+			local abilityStrPt1;
+
+			if ability2 == 0 or ability1 == ability2 then
+				abilityStrPt1 = PokemonData.ability[ability1 + 1];
+			else
+				abilityStrPt1 = PokemonData.ability[ability1 + 1] .. " or " .. PokemonData.ability[ability2 + 1];
+			end
+
+			if hiddenAbility ~= 0 then
+				monString = monString .. abilityStrPt1 .. " or " .. PokemonData.ability[hiddenAbility + 1];
+			else
+				monString = monString .. abilityStrPt1;
+			end
 		else
-			abilityID = monData.hiddenAbility
+			error(string.format("Invalid monAbilityType of %d!", monAbilityType));
 		end
-		
-		monString = monString .. PokemonData.ability[abilityID + 1];
+
 		monString = monString .. "\nLevel: " .. monData.level;
 		local evOutput = Program.concatEVsOrIVs(monData.EVs, false);
 		if evOutput ~= "" then
@@ -116,6 +162,7 @@ function Program.makeTrainerData()
 
 		local type1 = Memory.readbyte(gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_type1)
 		local type2 = Memory.readbyte(gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_type2)
+		--print(string.format("type1: %d, type2: %d, addr: %07x", type1, type2, gBaseStats + gBaseStats_SIZE * monData.pokemonID + gBaseStats_type1));
 		monString = monString .. "\nType: "
 
 		if type1 == type2 then
@@ -137,7 +184,7 @@ function Program.makeTrainerData()
 		table.insert(trainerData, monString);
 	end
 
-	table.insert(trainerData, "===================================\n\n");
+	table.insert(trainerData, "====================\n\n");
 
 	if trainerBattleOpponent ~= nil then
 		foundTrainers[trainerBattleOpponent] = true;
@@ -151,19 +198,21 @@ function Program.getPokemonData(index, partySrc)
 		return nil
 	end
 
-	local start = partySrc + (index - 1) * 0x64;
-	
+	local start = partySrc + (index - 1) * Pokemon_SIZE;
+
 	local personality = Memory.readdword(start)
+
 	local otid = Memory.readdword(start + 4)
-	local magicword = bit.bxor(personality, otid)
+	local magicword = 0-- bit.bxor(personality, otid)
 
 	local aux = personality % 24
-	local growthoffset = (TableData.growth[aux+1] - 1) * 12
-	local attackoffset = (TableData.attack[aux+1] - 1) * 12
-	local effortoffset = (TableData.effort[aux+1] - 1) * 12
-	local miscoffset   = (TableData.misc[aux+1]   - 1) * 12
+	local growthoffset = 0 --(TableData.growth[aux+1] - 1) * 12
+	local attackoffset = 12 --(TableData.attack[aux+1] - 1) * 12
+	local effortoffset = 24 --(TableData.effort[aux+1] - 1) * 12
+	local miscoffset   = 36 --(TableData.misc[aux+1]   - 1) * 12
 	
 	local growth1 = bit.bxor(Memory.readdword(start+32+growthoffset),   magicword)
+	--print(string.format("start: %07x, personality: %08x, growth1: %08x", start, personality, growth1));
 	local growth2 = bit.bxor(Memory.readdword(start+32+growthoffset+4), magicword)
 	local growth3 = bit.bxor(Memory.readdword(start+32+growthoffset+8), magicword)
 	local attack1 = bit.bxor(Memory.readdword(start+32+attackoffset),   magicword)
@@ -206,7 +255,7 @@ function Program.getPokemonData(index, partySrc)
 		pokemonID = Utils.getbits(growth1, 0, 16),
 		heldItem = Utils.getbits(growth1, 16, 16),
 		friendship = Utils.getbits(growth3, 8, 8),
-		hiddenAbility = Utils.getbits(growth3, 16, 8);
+		-- hiddenAbility = Utils.getbits(growth3, 16, 8);
 
 		move1 = Utils.getbits(attack1, 0, 16),
 		move2 = Utils.getbits(attack1, 16, 16),
@@ -230,7 +279,7 @@ function Program.getPokemonData(index, partySrc)
 		speedIV = Utils.getbits(misc2, 15, 5),
 		spatkIV = Utils.getbits(misc2, 20, 5),
 		spdefIV = Utils.getbits(misc2, 25, 5),
-		ability = Utils.getbits(misc2, 31, 1),
+		isHiddenAbility = Utils.getbits(misc2, 31, 1),
 
 		level = Memory.readbyte(start + 84),
 		nature = personality % 25,
@@ -247,7 +296,8 @@ function Program.getPokemonData(index, partySrc)
 
 		status = status_result,
 		sleep_turns = sleep_turns_result,
-		personality = personality
+		personality = personality,
+		ability = personality % 2
 	};
 
 	monData.EVs = {monData.hpEV, monData.atkEV, monData.defEV, monData.spatkEV, monData.spdefEV, monData.speedEV};
@@ -263,7 +313,7 @@ function Program.setPokemonData(index, partySrc, field, newValue)
 		return nil
 	end
 
-	local start = partySrc + (index - 1) * 0x64;
+	local start = partySrc + (index - 1) * Pokemon_SIZE;
 
 	local personality = Memory.readdword(start)
 	local otid = Memory.readdword(start + 4)
@@ -369,7 +419,7 @@ function Program.setPokemonData(index, partySrc, field, newValue)
 		local pokemonID = Utils.getbits(growth1, 0, 16);
 
 		for i = 1, 6, 1 do
-			baseStats[i] = Memory.readbyte(gBaseStats_stats + pokemonID * gBaseStats_SIZE + (i - 1));
+			baseStats[i] = Memory.readbyte(gBaseStats + gBaseStats_stats + pokemonID * gBaseStats_SIZE + (i - 1));
 			-- print(PokemonData.statsInternal[i] .. ": " .. baseStats[i]);
 		end
 
