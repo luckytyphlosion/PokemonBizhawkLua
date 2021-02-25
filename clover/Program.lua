@@ -6,7 +6,7 @@ gTrainers = 0x823eac8;
 gTrainerBattleOpponent_A = 0x20386ae;
 Trainer_partySize = 0x20;
 Trainer_SIZE = 0x28;
-gBaseStats = 0x996a984;
+gBaseStats = 0x9970fe8;
 gBaseStats_stats = 0x0;
 gBaseStats_SIZE = 0x1c;
 gBaseStats_abilities = 0x16;
@@ -76,8 +76,9 @@ function Program.makeTrainerData()
 			print(string.format("partySize: %d, monData.pokemonID: %d", partySize, monData.pokemonID));
 		end
 
+		--print(monData.pokemonID);
 		local monString = PokemonData.name[monData.pokemonID + 1];
-
+		
 		if monData.gender == 0 then
 			monString = monString .. " (M) @ "
 		else

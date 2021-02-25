@@ -11,7 +11,7 @@ continueDump = true;
 loadSavestate = false;
 monsWithRandomAbilities = {0, 0, 0, 0, 0, 0};
 badTrainers = {
-	[0x29] = true,
+	--[0x29] = true,
 };
 
 function onBuildTrainerPartyHook()
@@ -69,8 +69,8 @@ function onGenerateRandomAbilityFull()
 end
 
 function onGenerateRandomAbilityCommon(val)
-	local r7 = emu.getregister("R7");
-	local monIndex = (r7 - gEnemyParty)/Pokemon_SIZE + 1;
+	local r4 = emu.getregister("R4");
+	local monIndex = (r4 - gEnemyParty)/Pokemon_SIZE + 1;
 	monsWithRandomAbilities[monIndex] = val;
 	--print(string.format("Generating random ability for opponent 0x%x mon %d!", curTrainer, monIndex));
 end
@@ -82,8 +82,8 @@ onIsInBattleGUID = event.onmemoryexecute(onIsInBattle, 0x800ff98);
 -- onRandomGUID = event.onmemoryexecute(onRandom, 0x8044ec8);
 --onGetNatureFromPersonalityGUID = event.onmemoryexecute(onGetNatureFromPersonality, 0x945bf10);
 
-onGenerateRandomAbilityGUID = event.onmemoryexecute(onGenerateRandomAbility, 0x945f512);
-onGenerateRandomAbilityFullGUID = event.onmemoryexecute(onGenerateRandomAbilityFull, 0x945f524);
+onGenerateRandomAbilityGUID = event.onmemoryexecute(onGenerateRandomAbility, 0x9461b68);
+onGenerateRandomAbilityFullGUID = event.onmemoryexecute(onGenerateRandomAbilityFull, 0x9461bba);
 
 print("Running!");
 

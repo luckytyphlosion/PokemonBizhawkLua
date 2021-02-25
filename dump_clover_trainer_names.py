@@ -19,7 +19,7 @@ def charmap_convert_bytes_to_string(input_bytes):
     return output
 
 def main():
-    with open("radical_red_2.1.gba", "rb") as f:
+    with open("rr2_2a.gba", "rb") as f:
         gTrainerClassNames = 0x23e558
         f.seek(gTrainerClassNames)
         trainer_class_names = []

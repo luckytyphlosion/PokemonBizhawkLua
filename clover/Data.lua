@@ -207,7 +207,7 @@ PokemonData = {
 		"Eevee", "Snorlax", "Garbodor", "Melmetal", "Rillaboom", "Cinderace", "Inteleon", 
 		"Corvknight", "Orbeetle", "Drednaw", "Coalossal", "Flapple", "Appletun", "Sandaconda", 
 		"Toxtricity", "Toxtricity", "Centskorch", "Hatterene", "Grimmsnarl", "Alcremie", "Copperajah", 
-		"Duraludon", "Urshifu", "Urshifu", 
+		"Duraludon", "Urshifu", "Urshifu", "Calyrex", "Calyrex", "Spectrier", "Glastrier"
 	},
 	move = {
 		"-", "Pound", "Karate Chop", "Double Slap", "Comet Punch", "Mega Punch", "Pay Day", "Fire Punch", 

@@ -19,11 +19,11 @@ def charmap_convert_bytes_to_string(input_bytes):
     return output
 
 def main():
-    with open("radical_red_2.1.gba", "rb") as f:
-        gSpeciesNames = 0x1618124
+    with open("rr2_2a.gba", "rb") as f:
+        gSpeciesNames = 0x16182c8
         f.seek(gSpeciesNames)
         output = ""
-        for i in range(1264):
+        for i in range(1268):
             species_name_as_bytes = f.read(11)
             cur_species_name = charmap_convert_bytes_to_string(species_name_as_bytes)
             output += f"\"{cur_species_name}\", "
